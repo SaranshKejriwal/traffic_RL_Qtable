@@ -21,6 +21,11 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="modelContainer.py" />
+    <Compile Include="road.py" />
+    <Compile Include="roadIntersection.py" />
+    <Compile Include="timerCalculator.py" />
+    <Compile Include="trafficLight.py" />
     <Compile Include="traffic_RL_Qtable.py" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />

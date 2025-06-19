@@ -1,4 +1,4 @@
-
+from enum import Enum
 
 '''this class defines a single road in a 4-way intersection
 it contains the details of the expected traffic inflow/outflow rate - meaning how many vehicle enter/exit the intersection per unit time.
@@ -6,20 +6,57 @@ it contains the details of the expected traffic inflow/outflow rate - meaning ho
 
 '''
 
+class trafficDensityThreshold(Enum):
+    lessTraffic = 30 #there are less than 30 cars on a single road
+    mediumTraffic = 50 #there are 30-50 cars on a single road
+    heavyTraffic = 70 #there are more than 70 cars on a single road
+
+    #these values are deliberately slightly higher than outflow rates to ensure that the model is trained for a continuous traffic flow, not emptying the roads.
+
+class roadIdentifier(Enum):
+    left = 0
+    right = 1
+    top = 2
+    bottom = 3
+
+    none = 9 #for initialization only
+
 class road:
 
-    trafficInflowRate = 5 #meaning that 5 cars enter this road and reach the traffic light in each turn.
+    roadType = roadIdentifier.none
+
+    trafficInflowRate = 0 #the number of cars enter this road and reach the traffic light in each turn.
     totalVehiclesOnRoad = 0 #how many vehicles are on the road at the moment.
 
     #note - The Q table agent will NOT be aware of the inflow rate of any road. 
     #It will only be able to see the totalVehicles on road, which better reflects what a smart cam system would be able to detect.
 
-    def __init__(self, expectedTrafficInflowRate):
+    def __init__(self, expectedTrafficInflowRate, roadID):
         self.trafficInflowRate = expectedTrafficInflowRate
         #this will be used by the roadIntersection class to setup how busy the lanes are.
+        self.roadType = roadID
+
+    def updateTotalVehicleCount(self, changeInCount):
+        self.totalVehiclesOnRoad = self.totalVehiclesOnRoad + changeInCount
+
+        #changeInCount will be positive when inflow rate is added, and negative when the roadIntersection outflow rate is subtracted
+
+        if(self.totalVehiclesOnRoad) < 0:
+            self.totalVehiclesOnRoad = 0 
+            # in case the outflow exceeds the total vehicles on the road, the road is empty, 
+            #it makes no sense to have negative number of vehicles
+    
+
+    #Adds more vehicles to the road, based on the inflow rate of that road
+    def addVehiclesByInflow(self):
+        self.totalVehiclesOnRoad = self.totalVehiclesOnRoad + self.trafficInflowRate
 
 
-    #this is a placeholder function which we can use to change the inflow rate for different times of the day.
+    #resets the previous total of vehicles and sets them to the values expected at the start of the game, ie just the inflow from the first loop. 
+    def resetTotalVehicles(self):
+        self.totalVehiclesOnRoad = self.trafficInflowRate
+
+    #this is a placeholder function which we can use to change the inflow rate for different times of the day, if needed.
     def adjustTrafficInflowRate(self, newInflowRate):
         self.trafficInflowRate = newInflowRate
-        pass
+        
