@@ -11,14 +11,9 @@ The decision params to the traffic Light will all be sent from this class
 from road import road
 from road import roadIdentifier
 from trafficLight import trafficLight
-from trafficLight import greenLightIndicator
 from enum import Enum
+import numpy as np
 
-#this enum will hold the values of the number of vehicles that can exit the intersection based on duration of the green light
-class outflowRate(Enum):
-    shortGreenLight = -20 #green light of 30 seconds
-    mediumGreenLight = -40 #green light of 60 seconds
-    longGreenLight = -60 #green light of 90 seconds
 
 
 
@@ -30,9 +25,14 @@ class roadIntersection:
     topRoad = road(10, roadIdentifier.top) #busiest road, like an entry point from a main highway
     bottomRoad = road(7, roadIdentifier.bottom) #opposite to top road, like an entry point to a highway
 
-    #
+    #counter to avoid infinite loop
     runningIterations = 0
 
+    worstTrafficScore = 0
+
+    #this array will hold the values of the number of vehicles that can exit the intersection based on duration of the green light
+    OUTFLOW_RATE = np.array([-20,-40,-60]) #corresponding to the index predicted by the model
+    #this means that 20 vehicles exit in 30 seconds, 40 in 60 seconds, and 60 in 90 seconds
 
     def __init__(self):
         #create a trafficLight object which
@@ -51,7 +51,15 @@ class roadIntersection:
 
 
             #pass the context of the 4 lanes to the model to get a decision - the traffic light can only see the number of vehicles on the road, NOT the inflows
-            self.trafficSignal.getModelDecision(self.leftRoad.getTotalVehicles(),self.rightRoad.getTotalVehicles(),self.topRoad.getTotalVehicles(),self.bottomRoad.getTotalVehicles())
+            greenlitRoadIndex, greenLightDurationIndex =  self.trafficSignal.getModelDecision(self.leftRoad.getTrafficCategorization(),self.rightRoad.getTrafficCategorization(),self.topRoad.getTrafficCategorization(),self.bottomRoad.getTrafficCategorization())
+
+            print('green road:',greenlitRoadIndex,'; chosenDuration:',greenLightDurationIndex)
+
+            #greenLightDuration should be an int between 0 and 2
+            self.processDecision(roadIdentifier(greenlitRoadIndex), self.OUTFLOW_RATE[greenLightDurationIndex])
+
+            #compute the net traffic just after the decision was processed -  in terms of absolute sum of cars on the road without considering wait time.
+            self.calculateWorstTraffic(self.leftRoad.getTotalVehicles(),self.rightRoad.getTotalVehicles(),self.topRoad.getTotalVehicles(),self.bottomRoad.getTotalVehicles(),)
 
             #add more vehicles to each lane, based on their inflow rates
             self.addVehiclesByInflow()
@@ -64,6 +72,24 @@ class roadIntersection:
     def getWorstTrafficScore(self):
         return self.trafficSignal.getWorstTrafficScore()
     
+    def calculateWorstTraffic(self, leftRoadTraffic, rightRoadTraffic, topRoadTraffic, bottomRoadTraffic):
+        totalTraffic = leftRoadTraffic + rightRoadTraffic + topRoadTraffic + bottomRoadTraffic
+
+        if totalTraffic > self.worstTrafficScore:
+            self.worstTrafficScore = totalTraffic #update the worst traffic.
+
+            print('Worst Traffic:',totalTraffic , '; [',leftRoadTraffic,',',bottomRoadTraffic,',',topRoadTraffic,',',bottomRoadTraffic,']',)
+
+    '''Note - this will NOT directly be the reward function - the actual reward function will further penalize an excess wait time on each light'''
+
+
+    def processDecision(self,greenlitRoad, outflow):
+        self.leftRoad.processTrafficLightDecision(greenlitRoad, outflow)
+        self.rightRoad.processTrafficLightDecision(greenlitRoad, outflow)
+        self.topRoad.processTrafficLightDecision(greenlitRoad, outflow)
+        self.bottomRoad.processTrafficLightDecision(greenlitRoad, outflow)
+        #3 of the roads will compare greenlitRoad enum to themselves and take no action if there is no match.
+
 
 
     def addVehiclesByInflow(self):
