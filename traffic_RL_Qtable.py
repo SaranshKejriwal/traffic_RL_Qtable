@@ -9,15 +9,16 @@ print("Starting model training...")
 
 intersection = roadIntersection()
 
-
-
 #train Q table
 trainingIterations = 10000
-intersection.startTrafficFlow(trainingIterations)
+intersection.startTrafficFlow(trainingIterations, isTraining=True)
+
+
+print("Starting model test...")
 
 testIterations = 10000
 #run the model with the trained Q-table to see if the worst score has improved.
-intersection.startTrafficFlow(testIterations)
+intersection.startTrafficFlow(testIterations, isTraining=False)
 
 
 

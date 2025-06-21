@@ -19,7 +19,7 @@ class roadIdentifier(Enum):
     top = 2
     bottom = 3
 
-    none = 9 #for initialization only
+    none = 999 #for initialization only
 
 class road:
 
@@ -36,9 +36,11 @@ class road:
         #this will be used by the roadIntersection class to setup how busy the lanes are.
         self.roadType = roadID
 
+    def getTotalVehicles(self):
+        return self.totalVehiclesOnRoad
+
     def updateTotalVehicleCount(self, changeInCount):
         self.totalVehiclesOnRoad = self.totalVehiclesOnRoad + changeInCount
-
         #changeInCount will be positive when inflow rate is added, and negative when the roadIntersection outflow rate is subtracted
 
         if(self.totalVehiclesOnRoad) < 0:
@@ -48,7 +50,7 @@ class road:
     
 
     #Adds more vehicles to the road, based on the inflow rate of that road
-    def addVehiclesByInflow(self):
+    def updateTotalVehiclesByInflow(self):
         self.totalVehiclesOnRoad = self.totalVehiclesOnRoad + self.trafficInflowRate
 
 

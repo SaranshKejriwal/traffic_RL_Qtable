@@ -32,41 +32,45 @@ class roadIntersection:
 
     #
     runningIterations = 0
-    worstTrafficScore = 0
+
 
     def __init__(self):
         #create a trafficLight object which
         self.trafficSignal = trafficLight()
 
 
-    def startTrafficFlow(self, iterationCount):
+    def startTrafficFlow(self, iterationCount, isTraining):
         #this function will contain the actual while loop that updates the traffic status based on the decisions made by the light.
         #iterationCount will ensure that we train for a limited set of iterations and don't get into infinite loops.
 
         #reset the total traffic counters from any previous iterations
         self.resetVehicleCountOnIntersection()
+        print("starting intersecction iterations...")
 
         for i in range(iterationCount):
 
 
-
+            #pass the context of the 4 lanes to the model to get a decision - the traffic light can only see the number of vehicles on the road, NOT the inflows
+            self.trafficSignal.getModelDecision(self.leftRoad.getTotalVehicles(),self.rightRoad.getTotalVehicles(),self.topRoad.getTotalVehicles(),self.bottomRoad.getTotalVehicles())
 
             #add more vehicles to each lane, based on their inflow rates
+            self.addVehiclesByInflow()
 
 
-            pass
 
         pass
 
     #this method will return the max sum of number of cars across all 4 lanes that were stuck on that lane.
     def getWorstTrafficScore(self):
-        pass
+        return self.trafficSignal.getWorstTrafficScore()
+    
+
 
     def addVehiclesByInflow(self):
-        self.leftRoad.addVehiclesByInflow()
-        self.rightRoad.addVehiclesByInflow()
-        self.topRoad.addVehiclesByInflow()
-        self.bottomRoad.addVehiclesByInflow()
+        self.leftRoad.updateTotalVehiclesByInflow()
+        self.rightRoad.updateTotalVehiclesByInflow()
+        self.topRoad.updateTotalVehiclesByInflow()
+        self.bottomRoad.updateTotalVehiclesByInflow()
 
     #this method will reset the traffic on all lanes, based on their inflow rate, to start tracking changes based on traffic light decisions
     def resetVehicleCountOnIntersection(self):
@@ -75,3 +79,6 @@ class roadIntersection:
         self.rightRoad.resetTotalVehicles()
         self.topRoad.resetTotalVehicles()
         self.bottomRoad.resetTotalVehicles()
+
+        #reset worst traffic score to 0
+        self.trafficSignal.resetWorstTrafficScore()
