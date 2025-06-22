@@ -10,7 +10,7 @@ from road import road
 class modelContainer:
 
     epsilon = 1 #start with randomly exploring all possibilities and decay the randomness
-    epsilonDecay = 0.95 #epsilon will reduce by a geometric progression of 0.995, not an arithmetic progression like before.
+    epsilonDecay = 0.995 #epsilon will reduce by a geometric progression of 0.995, not an arithmetic progression like before.
     #Note that a decay factor of 0.9995 drops to <1% in just 10k iterations, 
     #This means that the snake will end up spinning in circles because that's the only path discovered.
     

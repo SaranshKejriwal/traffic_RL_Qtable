@@ -10,7 +10,7 @@ print("Starting model training...")
 intersection = roadIntersection()
 
 #train Q table
-trainingIterations = 100000
+trainingIterations = 1000000
 intersection.startTrafficFlow(trainingIterations, True)
 
 print('Worst traffic during training: ', intersection.getWorstTrafficScore())
