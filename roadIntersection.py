@@ -11,7 +11,6 @@ The decision params to the traffic Light will all be sent from this class
 from road import road
 from road import roadIdentifier
 from trafficLight import trafficLight
-from enum import Enum
 import numpy as np
 
 
@@ -28,7 +27,8 @@ class roadIntersection:
     #counter to avoid infinite loop
     runningIterations = 0
 
-    worstTrafficScore = 0
+    worstTrafficScore = 0 #will be used to calculate the highest traffic across all 4 lanes
+    #this is in terms of absolute number of cars on the road - NOT based on the delay factor of >180sec delay between successive green lights on a lane.
 
     #this array will hold the values of the number of vehicles that can exit the intersection based on duration of the green light
     OUTFLOW_RATE = np.array([-20,-40,-60]) #corresponding to the index predicted by the model
@@ -45,40 +45,47 @@ class roadIntersection:
 
         #reset the total traffic counters from any previous iterations
         self.resetVehicleCountOnIntersection()
-        print("starting intersecction iterations...")
+        self.trafficSignal.setIsTraining(isTraining)
+        print("starting intersection iterations...")
+
+        #if(not(isTraining)):
+            #print(self.trafficSignal.model.qTable)
 
         for i in range(iterationCount):
 
 
             #pass the context of the 4 lanes to the model to get a decision - the traffic light can only see the number of vehicles on the road, NOT the inflows
-            greenlitRoadIndex, greenLightDurationIndex =  self.trafficSignal.getModelDecision(self.leftRoad.getTrafficCategorization(),self.rightRoad.getTrafficCategorization(),self.topRoad.getTrafficCategorization(),self.bottomRoad.getTrafficCategorization())
+            greenlitRoadIndex, greenLightDurationIndex =  self.trafficSignal.getModelDecision(self.leftRoad.getTotalVehicles(),self.rightRoad.getTotalVehicles(),self.topRoad.getTotalVehicles(),self.bottomRoad.getTotalVehicles())
 
-            print('green road:',greenlitRoadIndex,'; chosenDuration:',greenLightDurationIndex)
+            #print('green road:',greenlitRoadIndex,'; chosenDuration:',greenLightDurationIndex)
 
             #greenLightDuration should be an int between 0 and 2
             self.processDecision(roadIdentifier(greenlitRoadIndex), self.OUTFLOW_RATE[greenLightDurationIndex])
 
             #compute the net traffic just after the decision was processed -  in terms of absolute sum of cars on the road without considering wait time.
-            self.calculateWorstTraffic(self.leftRoad.getTotalVehicles(),self.rightRoad.getTotalVehicles(),self.topRoad.getTotalVehicles(),self.bottomRoad.getTotalVehicles(),)
+            self.calculateWorstTraffic(self.leftRoad.getTotalVehicles(),self.rightRoad.getTotalVehicles(),self.topRoad.getTotalVehicles(),self.bottomRoad.getTotalVehicles(),i)
 
             #add more vehicles to each lane, based on their inflow rates
             self.addVehiclesByInflow()
 
+        return
 
 
-        pass
 
     #this method will return the max sum of number of cars across all 4 lanes that were stuck on that lane.
     def getWorstTrafficScore(self):
-        return self.trafficSignal.getWorstTrafficScore()
+        return self.worstTrafficScore
     
-    def calculateWorstTraffic(self, leftRoadTraffic, rightRoadTraffic, topRoadTraffic, bottomRoadTraffic):
+    def resetWorstTrafficScore(self):
+        self.worstTrafficScore = 0 #reset road conditions when moving from training to test
+
+    def calculateWorstTraffic(self, leftRoadTraffic, rightRoadTraffic, topRoadTraffic, bottomRoadTraffic, iteration):
         totalTraffic = leftRoadTraffic + rightRoadTraffic + topRoadTraffic + bottomRoadTraffic
 
         if totalTraffic > self.worstTrafficScore:
             self.worstTrafficScore = totalTraffic #update the worst traffic.
 
-            print('Worst Traffic:',totalTraffic , '; [',leftRoadTraffic,',',bottomRoadTraffic,',',topRoadTraffic,',',bottomRoadTraffic,']',)
+            print('Worst Traffic:',self.worstTrafficScore , '; [',leftRoadTraffic,',',rightRoadTraffic,',',topRoadTraffic,',',bottomRoadTraffic,'] ','iteration: ',iteration)
 
     '''Note - this will NOT directly be the reward function - the actual reward function will further penalize an excess wait time on each light'''
 
@@ -107,4 +114,4 @@ class roadIntersection:
         self.bottomRoad.resetTotalVehicles()
 
         #reset worst traffic score to 0
-        self.trafficSignal.resetWorstTrafficScore()
+        self.resetWorstTrafficScore()
